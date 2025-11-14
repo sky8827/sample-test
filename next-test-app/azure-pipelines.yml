@@ -1,0 +1,51 @@
+# Starter pipeline
+#動作概要
+# 起動時にGithub  swfg1200650-0/employee-card-ci から Checkout
+# Nodejsとnpm を インストール
+# npm run buildし 結果を圧縮
+# 圧縮ファイルを Artifacts　nec-digital-employee-card　に登録
+
+#起動方法
+# Repositories　swfg1200650-0/employee-card-ci　mainに push されると自動実行
+
+variables:
+  AZURE_RESOURCE_GROUP_NAME: 'vci-rg-issuer-001'
+  AZURE_APPSERVICE_NAME: 'nec-digital-employee-card-stg '
+  AZURE_PIPELINE_SERVICE_CONNECTION_NAME: 'nec-digital-card-stg-issuer-devops'
+  AZURE_ARTIFACT_NAME: 'nec-digital-employee-card'
+
+trigger:
+- main
+
+pr: none
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: NodeTool@0
+  inputs:
+    versionSpec: '22.x'
+  displayName: 'Install Node.js'
+  
+- checkout: self
+
+- script: |
+    npm install
+    npm run build
+  displayName: 'npm install and build'
+
+- task: ArchiveFiles@2
+  displayName: 'Archive files'
+  inputs:
+    rootFolderOrFile: '$(System.DefaultWorkingDirectory)'
+    includeRootFolder: false
+    archiveType: zip
+    archiveFile: $(Build.ArtifactStagingDirectory)/$(AZURE_ARTIFACT_NAME).zip
+    replaceExistingArchive: true
+
+- task: PublishPipelineArtifact@1
+  displayName: 'Publish artifact'
+  inputs:
+    targetPath: '$(Build.ArtifactStagingDirectory)/$(AZURE_ARTIFACT_NAME).zip'
+    artifactName: $(AZURE_ARTIFACT_NAME)
